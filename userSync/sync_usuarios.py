@@ -7,10 +7,10 @@ import pandas as pd
 
 # TEST Maker5
 OCTOPRINT_URL = "http://10.37.48.82/maker5/api"
-API_KEY = "F08E0CBDCE25426A9A63DC2DD1B9EF46"
+API_KEY = "DBD040687D844D36A948247CA5451EE1"
 
 # Ruta del archivo Excel
-archivo_excel = "usuarios.xlsx"
+archivo_excel = r"C:\Users\000092114\Documents\UPBMAKE\userSync\usuarios.xlsx"
 
 # Cargar datos desde el archivo Excel
 df = pd.read_excel(archivo_excel)
