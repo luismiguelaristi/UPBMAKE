@@ -1,9 +1,13 @@
 import requests
 import pandas as pd
 
-# Configuración de la API de OctoPrint
-OCTOPRINT_URL = "http://127.0.0.1:5000/api"
-API_KEY = "14B9C1OdVT4lt5DwpwxOLLfmXJZgpCIhNutIATCdWRM"
+# Configuración de la API de OctoPrint TEST MADRID
+# OCTOPRINT_URL = "http://127.0.0.1:5000/api"
+# API_KEY = "14B9C1OdVT4lt5DwpwxOLLfmXJZgpCIhNutIATCdWRM"
+
+# TEST Maker5
+OCTOPRINT_URL = "http://10.37.48.82/maker5/api"
+API_KEY = "F08E0CBDCE25426A9A63DC2DD1B9EF46"
 
 # Ruta del archivo Excel
 archivo_excel = "usuarios.xlsx"
