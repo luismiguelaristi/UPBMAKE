@@ -5,7 +5,7 @@ import pandas as pd
 OCTOPRINT_URL = "http://127.0.0.1:5000/api"
 API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
 ARCHIVO_EXCEL = "usuarios.xlsx"
-DRY_RUN = False  # True = solo validación sin aplicar cambios
+DRY_RUN = True  # True = solo validación sin aplicar cambios
 
 # Roles/grupos válidos en OctoPrint
 ROLES_VALIDOS = {"admins", "users", "read-only"}
