@@ -3,7 +3,7 @@ import pandas as pd
 
 # Configuración OctoPrint
 OCTOPRINT_URL = "http://127.0.0.1:5000/api"
-API_KEY = "0iDipFPFDRDr0jboQY1fEgXRfzJg7FFCoAlCL5QAupA"  # <-- tu nueva API key aquí
+API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
 ARCHIVO_EXCEL = "usuarios.xlsx"
 DRY_RUN = False  # True = solo validación sin aplicar cambios
 
