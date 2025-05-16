@@ -1,73 +1,105 @@
 import requests
 import pandas as pd
 
-# Configuración de la API de OctoPrint TEST MADRID
-# OCTOPRINT_URL = "http://127.0.0.1:5000/api"
-# API_KEY = "14B9C1OdVT4lt5DwpwxOLLfmXJZgpCIhNutIATCdWRM"
+# Configuración OctoPrint
+OCTOPRINT_URL = "http://127.0.0.1:5000/api"
+API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
+ARCHIVO_EXCEL = "usuarios.xlsx"
+DRY_RUN = True  # True = solo validación sin aplicar cambios
 
-# TEST Maker5
-OCTOPRINT_URL = "http://10.37.48.82/maker5/api"
-API_KEY = "DBD040687D844D36A948247CA5451EE1"
+# Roles/grupos válidos en OctoPrint
+ROLES_VALIDOS = {"admins", "users", "read-only"}
 
-# Ruta del archivo Excel
-archivo_excel = r"C:\Users\000092114\Documents\UPBMAKE\userSync\usuarios.xlsx"
+# Leer Excel y construir diccionario de usuarios
+df = pd.read_excel(ARCHIVO_EXCEL)
+usuarios_excel = {}
 
-# Cargar datos desde el archivo Excel
-df = pd.read_excel(archivo_excel)
+#Usuario fijo
+usuarios_excel["Juanma"] = {
+    "password": "pass123",
+    "groups": ["admins"]
+}
 
-# Extraer usuarios del Excel
-usuarios_excel = {row["Usuario"]: {"password": row["Password"], "roles": [row["Perfil"]]} for _, row in df.iterrows()}
+print("\n--- Validando usuarios del Excel ---")
+for _, row in df.iterrows():
+    username = str(row.get("Usuario", "")).strip()
+    password = str(row.get("Password", "")).strip()
+    rol = str(row.get("Perfil", "")).strip()
 
-# Obtener la lista de usuarios actuales en OctoPrint
+    if not username or not password or not rol:
+        print(f"- Usuario inválido o incompleto: usuario='{username}', rol='{rol}'")
+        continue
+
+    if rol not in ROLES_VALIDOS:
+        print(f"Rol inválido para {username}: '{rol}'")
+        continue
+
+    usuarios_excel[username] = {
+        "password": password,
+        "groups": [rol]
+    }
+    print(f"Usuario válido: {username} - grupo: {rol}")
+
+
+if DRY_RUN:
+    print("\n[DRY RUN ACTIVADO] No se aplicarán cambios a OctoPrint.")
+    exit()
+
+# Headers para API
 headers = {"X-Api-Key": API_KEY}
-users_response = requests.get(f"{OCTOPRINT_URL}/users", headers=headers)
 
-if users_response.status_code == 200:
-    usuarios_octoprint = {user["name"]: {"roles": user["groups"]} for user in users_response.json()["users"]}
+# Obtener usuarios actuales
+resp = requests.get(f"{OCTOPRINT_URL}/users", headers=headers)
+if resp.status_code != 200:
+    print("Error al obtener usuarios actuales:", resp.text)
+    exit()
 
-    # CREAR USUARIOS NUEVOS
-    for username, data in usuarios_excel.items():
-        if username not in usuarios_octoprint:
-            print(f"Creando usuario: {username}")
-            new_user_data = {
-                "name": username,
+usuarios_octoprint = {
+    u["name"]: {"groups": u["groups"]}
+    for u in resp.json()["users"]
+}
+
+# Crear nuevos usuarios
+for username, data in usuarios_excel.items():
+    if username not in usuarios_octoprint:
+        print(f"Creando usuario: {username}")
+        payload = {
+            "name": username,
+            "password": data["password"],
+            "roles": data["groups"], 
+            "active": True
+        }
+        r = requests.post(f"{OCTOPRINT_URL}/users", headers=headers, json=payload)
+        if r.status_code == 201:
+            print(f"Usuario {username} creado.")
+        else:
+            print(f"Error al crear {username}: {r.text}")
+
+# Actualizar usuarios existentes si los grupos son diferentes
+for username, data in usuarios_excel.items():
+    if username in usuarios_octoprint:
+        grupos_actuales = set(usuarios_octoprint[username]["groups"])
+        grupos_nuevos = set(data["groups"])
+        if grupos_actuales != grupos_nuevos:
+            print(f"Actualizando grupos de {username}: {grupos_actuales} → {grupos_nuevos}")
+            payload = {
                 "password": data["password"],
-                "roles": data["roles"],
-                "active": True
+                "groups": data["groups"]
             }
-            response = requests.post(f"{OCTOPRINT_URL}/users", json=new_user_data, headers=headers)
-            if response.status_code == 201:
-                print(f"Usuario {username} creado correctamente.")
+            r = requests.put(f"{OCTOPRINT_URL}/users/{username}", headers=headers, json=payload)
+            if r.status_code == 204:
+                print(f"Usuario {username} actualizado.")
             else:
-                print(f"Error al crear usuario {username}: {response.text}")
+                print(f"Error al actualizar {username}: {r.text}")
 
-    # MODIFICAR USUARIOS EXISTENTES
-    for username, data in usuarios_excel.items():
-        if username in usuarios_octoprint:
-            # Si el rol es diferente, lo actualizamos
-            if set(data["roles"]) != set(usuarios_octoprint[username]["roles"]):
-                print(f"Modificando usuario: {username}")
-                update_user_data = {
-                    "password": data["password"],
-                    "roles": data["roles"]
-                }
-                response = requests.put(f"{OCTOPRINT_URL}/users/{username}", json=update_user_data, headers=headers)
-                if response.status_code == 204:
-                    print(f"Usuario {username} modificado correctamente.")
-                else:
-                    print(f"Error al modificar usuario {username}: {response.text}")
-
-    # ELIMINAR USUARIOS QUE YA NO ESTÁN EN EL EXCEL
-    for username in usuarios_octoprint:
-        if username not in usuarios_excel:
-            print(f"Eliminando usuario: {username}")
-            response = requests.delete(f"{OCTOPRINT_URL}/users/{username}", headers=headers)
-            if response.status_code == 204:
-                print(f"Usuario {username} eliminado correctamente.")
-            else:
-                print(f"Error al eliminar usuario {username}: {response.text}")
-
-else:
-    print("Error al obtener la lista de usuarios de OctoPrint.")
+# Eliminar usuarios que no están en el Excel
+for username in usuarios_octoprint:
+    if username not in usuarios_excel and username not in ("admin", "Juanma"):
+        print(f"Eliminando usuario: {username}")
+        r = requests.delete(f"{OCTOPRINT_URL}/users/{username}", headers=headers)
+        if r.status_code == 204:
+            print(f"Usuario {username} eliminado.")
+        else:
+            print(f"Error al eliminar {username}: {r.text}")
 
 print("Sincronización completada.")
