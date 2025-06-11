@@ -2,13 +2,34 @@ import requests
 import pandas as pd
 
 # Configuración OctoPrint
+## Pruebas
 OCTOPRINT_URL = "http://127.0.0.1:5000/api"
-API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
-ARCHIVO_EXCEL = "usuarios.xlsx"
-DRY_RUN = True  # True = solo validación sin aplicar cambios
+
+# Producción
+# OCTOPRINT_URL = "http://10.37.48.82/maker1/api"
+
+# API Key de usuario administrador de OctoPrint
+
+## Pruebas
+# API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
+
+## Producción
+API_KEY = "68068CC3571249CF9F04BD48822D80E5"
+# Archivo Excel con usuarios, para pruebas usar el incluido en el repositorio
+ARCHIVO_EXCEL = r"C:\Users\000092114\UPB\UPB Make - Documentos\Makerspace Biblioteca\SoftwareGestion\usuarios.xlsx"
+DRY_RUN = False  # True = solo validación sin aplicar cambios
 
 # Roles/grupos válidos en OctoPrint
-ROLES_VALIDOS = {"admins", "users", "read-only"}
+
+## Se requiere un grupo custom: "estudiante"
+### Este grupo se debe crear manualmente en OctoPrint antes de ejecutar el script
+### Permisos:
+#### File Download, List, Select, Upload
+#### GCODE Viewer
+#### Settings Access
+#### Status
+
+ROLES_VALIDOS = {"admins", "users", "read-only","estudiante"}
 
 # Leer Excel y construir diccionario de usuarios
 df = pd.read_excel(ARCHIVO_EXCEL)
@@ -94,7 +115,7 @@ for username, data in usuarios_excel.items():
 
 # Eliminar usuarios que no están en el Excel
 for username in usuarios_octoprint:
-    if username not in usuarios_excel and username not in ("admin", "Juanma"):
+    if username not in usuarios_excel and username not in ("admin", "Juanma","LMAG"):
         print(f"Eliminando usuario: {username}")
         r = requests.delete(f"{OCTOPRINT_URL}/users/{username}", headers=headers)
         if r.status_code == 204:
