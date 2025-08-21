@@ -3,18 +3,25 @@ import pandas as pd
 
 # Configuración OctoPrint
 ## Pruebas
-OCTOPRINT_URL = "http://127.0.0.1:5000/api"
+# OCTOPRINT_URL = "http://127.0.0.1:5000/api"
 
 # Producción
 # OCTOPRINT_URL = "http://10.37.48.82/maker1/api"
+OCTOPRINT_URL = "http://maker2.local/api"
+
 
 # API Key de usuario administrador de OctoPrint
 
 ## Pruebas
 # API_KEY = "PONER API KEY GOBLAL O USUARIO ADMIN LUIS"  # API key aquí
 
+##TODO Crear lista de API keys de usuarios y usarla para crear usuarios
+
 ## Producción
-API_KEY = "68068CC3571249CF9F04BD48822D80E5"
+#Maker1
+# API_KEY = "68068CC3571249CF9F04BD48822D80E5"
+#Maker2: 
+API_KEY = "DD37FC1256E042D792F9D84FB66650FA"
 # Archivo Excel con usuarios, para pruebas usar el incluido en el repositorio
 ARCHIVO_EXCEL = r"C:\Users\000092114\UPB\UPB Make - Documentos\Makerspace Biblioteca\SoftwareGestion\usuarios.xlsx"
 DRY_RUN = False  # True = solo validación sin aplicar cambios
