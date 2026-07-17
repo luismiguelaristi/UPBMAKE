@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+from urllib.parse import quote
 
 # Configuración OctoPrint
 ## Pruebas
@@ -7,7 +8,7 @@ import pandas as pd
 
 # Producción
 # OCTOPRINT_URL = "http://10.37.48.82/maker1/api"
-OCTOPRINT_URL = "http://maker2.local/api"
+OCTOPRINT_URL = "http://maker1.local/api"
 
 
 # API Key de usuario administrador de OctoPrint
@@ -19,9 +20,9 @@ OCTOPRINT_URL = "http://maker2.local/api"
 
 ## Producción
 #Maker1
-# API_KEY = "68068CC3571249CF9F04BD48822D80E5"
+API_KEY = "t-xFcteqy4zkSitteA_097llafqFSHhV9x4HqIeUefg"
 #Maker2: 
-API_KEY = "DD37FC1256E042D792F9D84FB66650FA"
+# API_KEY = "DD37FC1256E042D792F9D84FB66650FA"
 # Archivo Excel con usuarios, para pruebas usar el incluido en el repositorio
 ARCHIVO_EXCEL = r"C:\Users\000092114\UPB\UPB Make - Documentos\Makerspace Biblioteca\SoftwareGestion\usuarios.xlsx"
 DRY_RUN = False  # True = solo validación sin aplicar cambios
@@ -54,6 +55,10 @@ for _, row in df.iterrows():
     password = str(row.get("Password", "")).strip()
     rol = str(row.get("Perfil", "")).strip()
 
+    if rol.lower() == "inactivo":
+        rol = "estudiante"
+        print(f"Usuario {username} marcado como inactivo, asignando rol 'estudiante'.")
+
     if not username or not password or not rol:
         print(f"- Usuario inválido o incompleto: usuario='{username}', rol='{rol}'")
         continue
@@ -76,8 +81,35 @@ if DRY_RUN:
 # Headers para API
 headers = {"X-Api-Key": API_KEY}
 
+# Validar API key y permisos del usuario autenticado antes de gestionar usuarios.
+resp_current_user = requests.get(f"{OCTOPRINT_URL}/currentuser", headers=headers)
+if resp_current_user.status_code == 401:
+    print("Error 401: API key inválida o no autorizada.")
+    exit()
+if resp_current_user.status_code != 200:
+    print(
+        f"Error al validar API key ({resp_current_user.status_code}): {resp_current_user.text}"
+    )
+    exit()
+
+current_user = resp_current_user.json()
+permissions = set(current_user.get("permissions") or [])
+is_admin = bool(current_user.get("admin", False)) or ("ADMIN" in permissions)
+if not is_admin:
+    print(
+        "Error: la API key autenticó correctamente, pero no tiene permisos de administrador "
+        "para gestionar usuarios. Usa la API key global o una key de un usuario admin."
+    )
+    exit()
+
 # Obtener usuarios actuales
 resp = requests.get(f"{OCTOPRINT_URL}/users", headers=headers)
+if resp.status_code == 403:
+    print(
+        "Error 403: API key sin permiso para listar/administrar usuarios en OctoPrint. "
+        "Revisa que la key pertenezca a un usuario administrador."
+    )
+    exit()
 if resp.status_code != 200:
     print("Error al obtener usuarios actuales:", resp.text)
     exit()
@@ -114,7 +146,8 @@ for username, data in usuarios_excel.items():
                 "password": data["password"],
                 "groups": data["groups"]
             }
-            r = requests.put(f"{OCTOPRINT_URL}/users/{username}", headers=headers, json=payload)
+            username_encoded = quote(username, safe="")
+            r = requests.put(f"{OCTOPRINT_URL}/users/{username_encoded}", headers=headers, json=payload)
             if r.status_code == 204:
                 print(f"Usuario {username} actualizado.")
             else:
@@ -124,7 +157,8 @@ for username, data in usuarios_excel.items():
 for username in usuarios_octoprint:
     if username not in usuarios_excel and username not in ("admin", "Juanma","LMAG"):
         print(f"Eliminando usuario: {username}")
-        r = requests.delete(f"{OCTOPRINT_URL}/users/{username}", headers=headers)
+        username_encoded = quote(username, safe="")
+        r = requests.delete(f"{OCTOPRINT_URL}/users/{username_encoded}", headers=headers)
         if r.status_code == 204:
             print(f"Usuario {username} eliminado.")
         else:
